@@ -79,10 +79,9 @@
     ;; will define `coconut-mode' to call it properly right before it exits
 
     ;; Support for shell integration through some python mode hacks
-    (setq python-shell-interpreter "coconut")
-    (setq python-shell-interpreter-args "-i")
-
-    (setq python-shell-prompt-output-regexp "")
+    (setq-local python-shell-interpreter "coconut")
+    (setq-local python-shell-interpreter-args "-i")
+    (setq-local  python-shell-prompt-output-regexp "")
 
     (add-to-list 'python-shell-setup-codes "import coconut.convenience;coconut.convenience.setup(line_numbers=True, keep_lines=True, target='sys')")
 
