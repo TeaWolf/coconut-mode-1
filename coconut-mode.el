@@ -77,7 +77,54 @@
     (setq font-lock-defaults coconut-font-lock-defaults)
     ;; Note that there's no need to manually call `coconut-mode-hook'; `define-derived-mode'
     ;; will define `coconut-mode' to call it properly right before it exits
-    )
+
+    ;; Support for shell integration through some python mode hacks
+    (setq python-shell-interpreter "coconut")
+    (setq python-shell-interpreter-args "-i")
+
+    (setq python-shell-prompt-output-regexp "")
+
+    (add-to-list 'python-shell-setup-codes "import coconut.convenience;coconut.convenience.setup(line_numbers=True, keep_lines=True, target='sys')")
+
+
+    (defun python-shell-send-file (file-name &optional process temp-file-name
+                                             delete msg)
+      "Send FILE-NAME to inferior Python PROCESS.
+If TEMP-FILE-NAME is passed then that file is used for processing
+instead, while internally the shell will continue to use
+FILE-NAME.  If TEMP-FILE-NAME and DELETE are non-nil, then
+TEMP-FILE-NAME is deleted after evaluation is performed.  When
+optional argument MSG is non-nil, forces display of a
+user-friendly message if there's no process running; defaults to
+t when called interactively."
+      (interactive
+       (list
+        (read-file-name "File to send: ")   ; file-name
+        nil                                 ; process
+        nil                                 ; temp-file-name
+        nil                                 ; delete
+        t))                                 ; msg
+      (let* ((process (or process (python-shell-get-process-or-error msg)))
+             (encoding (with-temp-buffer
+                         (insert-file-contents
+                          (or temp-file-name file-name))
+                         (python-info-encoding)))
+             (file-name (expand-file-name (file-local-name file-name)))
+             (temp-file-name (when temp-file-name
+                               (expand-file-name
+                                (file-local-name temp-file-name)))))
+        (python-shell-send-string
+         (format
+          (concat
+           "import codecs, os;"
+           "__pyfile = codecs.open('''%s''', encoding='''%s''');"
+           "__code = __pyfile.read();"
+           "__pyfile.close();"
+           (when (and delete temp-file-name)
+             (format "os.remove('''%s''');" temp-file-name))
+           "exec(coconut.convenience.parse(__code, 'block'));")
+          (or temp-file-name file-name) encoding file-name)
+         process))))
   (provide 'coconut-mode)
 
 ;; Local Variables:
